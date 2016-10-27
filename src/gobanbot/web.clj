@@ -1,29 +1,35 @@
 (ns gobanbot.web
   (:require [gobanbot.image :as img]
+            [gobanbot.flow :as flow]
             [compojure.api.sweet :refer :all]
             [compojure.api.exception :as ex]
             [ring.util.http-response :refer :all]
-            [schema.core :as s]
+            [schema.core :as scm]
             [ring.adapter.jetty :refer :all]
             [ring.logger.protocols :as logger.protocols]
             [ring.logger :as logger]
             [morse.handlers :refer :all]
             [morse.api :refer :all]
-            [clojure.java.io :as io]))
+            [clojure.java.io :as io]
+            [clojure.string :as s]))
 
 (def token "162694958:AAGu9QiYPEm9ADwSYtEGEZ83G_9420ZvWok")
 
-(defn handle-message [msg]
-  (let [chat-id (get-in msg [:chat :id])
-        text (:text msg)]
-    (send-text token chat-id (str "You said " text))
-    (send-photo token chat-id (-> (img/get-goban chat-id) io/resource io/file))))
+(defn handle-move [{{chat-id :id} :chat {user-id :id} :from cmd :text}]
+  (let [text (s/replace cmd #"\/move\s" "")
+        res (flow/move chat-id user-id text)]
+    (if (= res :ok) 
+        (send-photo token chat-id (->> chat-id
+                                      flow/get-game
+                                      (img/get-goban chat-id)
+                                      io/resource
+                                      io/file))
+        (send-text token chat-id (str "Can't move " text)))))
 
 (defhandler bot-handler
-    (command "start" {user :user} (println "User" user "joined"))
-    (command "chroma" message (do (println "chrome handler" message) "ok"))
-
-    (message message (do (println "Intercepted message:" message) (handle-message message) "ok")))
+  (command "start" {user :user} (println "User" user "joined"))
+  (command "move" message (do (println "move handler" message) (handle-move message) "ok"))
+  (message message (do (println "Intercepted message:" message) "ok")))
 
 (def app
   (api
@@ -37,8 +43,8 @@
     (context "/api" []
       :tags ["api"]
       (POST "/update" []
-        :return s/Str
-        :body [up s/Any]
+        :return scm/Str
+        :body [up scm/Any]
         :summary "gets updates"
         (ok (bot-handler up))))))
 
