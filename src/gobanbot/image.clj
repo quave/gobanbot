@@ -33,11 +33,18 @@
     (fn [i] [:line {:stroke :black :width 1} [10 i] [190 i]])  
     (range 10 200 10)))
 
+(defn get-htext []
+  (map
+    (fn [i] [:text {:font-family "sans-serif" :font-size 10 :x (+ 10 (* i 10)) :y 10}  
+             (-> i (+ 97) char str)])
+    (range 19)))
+
 (defn get-goban [filename moves]
   (let [f-n (str filename ".png")]
     (svg/render-png (vec (concat [:dali/page] 
                                  (get-hlines) 
                                  (get-vlines)
+                                 (get-htext)
                                  (get-stones moves)))
                     (str "resources/" f-n))
     f-n))

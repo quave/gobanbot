@@ -24,7 +24,7 @@
                                       (img/get-goban chat-id)
                                       io/resource
                                       io/file))
-        (send-text token chat-id (str "Can't move " text)))))
+        (send-text token chat-id (str "Can't move " res)))))
 
 (defhandler bot-handler
   (command "start" {user :user} (println "User" user "joined"))
@@ -34,11 +34,11 @@
 (def app
   (api
     {:formats [:json]
-     :exceptions 
-       {:handlers {::ex/request-parsing 
-                   (ex/with-logging ex/request-parsing-handler :info)
+     :exceptions {:handlers
+                  {::ex/request-parsing 
+                     (ex/with-logging ex/request-parsing-handler :info)
                    ::ex/response-validation 
-                   (ex/with-logging ex/response-validation-handler :error)}}}
+                     (ex/with-logging ex/response-validation-handler :error)}}}
 
     (context "/api" []
       :tags ["api"]
@@ -48,21 +48,18 @@
         :summary "gets updates"
         (ok (bot-handler up))))))
 
+(def full-logger
+  (reify logger.protocols/Logger
+    (add-extra-middleware [_ handler] handler)
+    (log [_ level throwable msg] (println (name level) "-" msg))))
 
-(defn -main
-  []
+(defn -main []
   (run-jetty 
-    (-> app
-        (logger/wrap-with-logger
-          {:logger (reify logger.protocols/Logger
-                     (add-extra-middleware [_ handler] handler)
-                     (log [_ level throwable msg]
-                       (println (name level) "-" msg)))})
-        )
-   {:port 8080
-    :ssl-port  8443
-    :join?     false
-    :ssl?      true
-    :keystore  "./gobanbot.jks"                    
-    :key-password  "password"}))
+    (logger/wrap-with-logger {:logger full-logger} app)
+    {:port 8080
+     :ssl-port  8443
+     :join?     false
+     :ssl?      true
+     :keystore  "./gobanbot.jks"
+     :key-password  "password"}))
 
