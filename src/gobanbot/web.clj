@@ -48,14 +48,14 @@
         :summary "gets updates"
         (ok (bot-handler up))))))
 
-(def full-logger
-  (reify logger.protocols/Logger
-    (add-extra-middleware [_ handler] handler)
-    (log [_ level throwable msg] (println (name level) "-" msg))))
-
 (defn -main []
   (run-jetty 
-    (logger/wrap-with-logger {:logger full-logger} app)
+    (-> app
+        (logger/wrap-with-logger
+          {:logger (reify logger.protocols/Logger
+                     (add-extra-middleware [_ handler] handler)
+                     (log [_ level throwable msg]
+                       (println (name level) "-" msg)))}))
     {:port 8080
      :ssl-port  8443
      :join?     false
