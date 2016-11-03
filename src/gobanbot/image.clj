@@ -15,7 +15,7 @@
   (let [style (if (= color :black) 
                 {:fill :black} 
                 {:stroke :black :fill :white :width 1})]
-    [:circle style (vec (map #(-> % (* 10) (+ 10)) xy)) 6]))
+    [:circle style (vec (map #(-> % (* 100) (+ 100)) xy)) 45]))
 
 (defn get-stones [moves]
   (map (fn [{:keys [mv bid]}] 
@@ -25,17 +25,23 @@
 
 (defn get-hlines []
   (map 
-    (fn [i] [:line {:stroke :black :width 1} [i 10] [i 190]])  
-    (range 10 200 10)))
+    (fn [i] [:line {:stroke :black :stroke-width 5} [i 100] [i 1900]])  
+    (range 100 2000 100)))
 
 (defn get-vlines []
   (map 
-    (fn [i] [:line {:stroke :black :width 1} [10 i] [190 i]])  
-    (range 10 200 10)))
+    (fn [i] [:line {:stroke :black :stroke-width 5} [100 i] [1900 i]])  
+    (range 100 2000 100)))
 
 (defn get-htext []
   (map
-    (fn [i] [:text {:font-family "sans-serif" :font-size 10 :x (+ 10 (* i 10)) :y 10}  
+    (fn [i] [:text {:font-family "sans-serif" :font-size 72 :x (+ 72 (* i 100)) :y 72}  
+             (-> i (+ 97) char str)])
+    (range 19)))
+
+(defn get-vtext []
+  (map
+    (fn [i] [:text {:font-family "sans-serif" :font-size 72 :x 10 :y (+ 122 (* i 100))}  
              (-> i (+ 97) char str)])
     (range 19)))
 
@@ -45,6 +51,7 @@
                                  (get-hlines) 
                                  (get-vlines)
                                  (get-htext)
+                                 (get-vtext)
                                  (get-stones moves)))
                     (str "resources/" f-n))
     f-n))
