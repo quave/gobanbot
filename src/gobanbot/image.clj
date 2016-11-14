@@ -18,10 +18,9 @@
     [:circle style (vec (map #(-> % (* cell-size) (+ cell-size)) xy)) (* 0.45 cell-size)]))
 
 (defn get-stones [moves]
-  (map (fn [{:keys [mv bid]}] 
-         (let [color (if bid :black :white)]
-           (xy-to-circle (mv-to-xy mv) color)))
-       moves))
+  (map (fn [{:keys [mv color]}] 
+         (xy-to-circle (mv-to-xy mv) color))
+    moves))
 
 (defn get-hlines [size]
   (map 
