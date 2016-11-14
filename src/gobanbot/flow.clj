@@ -8,115 +8,175 @@
    :subprotocol "sqlite"
    :subname     "resources/storage.db" }) 
 
-(defn get-game-where [clause]
-  (seq (query db (str "select rowid, * from moves where ended=0 and (" clause ")"))))
+(defn get-moves [gid]
+  (seq (query db (str "select * from moves where eaten=0 and gid=" gid))))
+(defn moves-to-mvc [moves] (zipmap (map :mv moves) (map :color moves)))
+(def get-last-color (comp :color last))
+(defn get-color [moves mv]  (get (moves-to-mvc moves) mv))
+(defn get-move-by-mv [moves mv] (first (filter #(= (:mv %) mv) moves)))
+(defn mark-eaten [move] 
+  (println "mark-eaten" move)
+  (update! db :moves {:eaten 1} ["mid=?" (:mid move)]))
 
-(defn get-game-full [cid] (get-game-where (str "cid=" cid)))
-(defn get-game [cid] (get-game-where (str "eaten=" 0 " and cid=" cid)))
-(defn end-game [cid] (update! db :moves {:ended 1} ["cid=?" cid]))
-(defn mark-eaten [move] (update! db :moves {:eaten 1} ["rowid=?" (:rowid move)]))
+(defn find-game [cid]
+  (if-let [game (first (query db (str "select * from games where ended=0 and cid=" cid)))]
+    (assoc game :moves (get-moves (:gid game)))))
 
-(defn detect-bwid [game uid]
-  (cond
-    (not game) :bid
-    (some #(-> % :bid (= uid)) game) :bid 
-    (some #(-> % :wid (= uid)) game) :wid 
-    :else :wid))
+(defn get-game [gid]
+  (if-let [game (first (query db (str "select * from games where gid=" gid)))]
+    (assoc game :moves (get-moves (:gid game)))))
 
-(defn get-move-state [game uid mv bwid]
-  (cond 
-    (-> game last (get bwid) (= uid)) :not-your-turn
-    (and (some #(= (:mv %) mv) game) 
-         (not= mv "pass")) :ocupied
-    (-> game last :mv (= "resign")) :game-ended
-    (#{"pass" "resign"} mv) :ok
+(defn end-game [gid] 
+  (println "end-game" gid)
+  (update! db :games {:ended 1} ["gid=?" gid]))
+
+(defn on-board? [mv size]
+  (let [min-move 97
+        max-move (+ 96 size)]
     (and (-> mv count (= 2))
-         (-> mv first int (>= (int \a)))
-         (-> mv first int (<= (int \s)))
-         (-> mv second int (>= (int \a)))
-         (-> mv second int (<= (int \s)))) :ok
-    :else :not-a-move))
+         (-> mv first int (>= min-move))
+         (-> mv first int (<= max-move))
+         (-> mv second int (>= min-move))
+         (-> mv second int (<= max-move)))))
 
-(defn should-end? [game mv]
-  (or (= mv "resign")
+(defn guess-color [{:keys [bid wid]} uid]
+  (cond
+    (or (not bid) (= bid uid)) "b"
+    (or (not wid) (= wid uid)) "w"))
+
+(defn decide-move [game uid  mv]
+  (let [moves (:moves game)
+        color (guess-color game uid)
+        bid (:bid game)
+        wid (:wid game)
+        bwid (cond (not bid) :bid (and (not wid) (not= bid uid)) :wid)]
+    {:bwid bwid
+     :color color
+     :status
+     (cond 
+       (not game) :no-game
+       (not color) :not-a-player
+       (-> game :moves get-last-color (= color)) :not-your-turn
+       (and (get-color moves mv) (not= mv "pass")) :ocupied
+       (= (:ended game) 1) :no-game
+       (#{"pass" "resign"} mv) :ok
+       (on-board? mv (:size game)) :ok
+       :else :not-a-move)}))
+
+(defn should-end? [game]
+  (or (->> game :moves (some #(= "resign" (:mv %))))
       (->> game 
+           :moves
            (filter (comp (partial = "pass") :mv)) 
            count 
            (= 2))))
 
-(def mv-to-xy (partial map #(- (int %) 97)))
-(def xy-to-mv
-  (comp (partial apply str)
-        (partial map (comp char 
-                           (partial + 97)))))
-(defn move-to-xyc
-  [{:keys [mv bid]}]
-  [(mv-to-xy mv) (if bid :black :white)])
-
-(defn game-to-grid [game] (->> game (map move-to-xyc) (into {})))
-
-(defn show [grid]
-  (str 
-    "----------------------\n"
-    (apply str (for [x (range 19)]
-      (str "|"
-           (apply str (for [y (range 19)] (case (grid [x y]) :black "x" :white "o" nil "+")))
+(defn show [{:keys [size moves]}]
+  (let [mvc (moves-to-mvc moves)]
+    (str 
+      (apply str (repeat (+ 2 size) "-")) "\n"
+      (apply str (for [h (range size)]
+        (str "|"
+           (apply str (for [v (range size)] 
+                        (case (mvc (str (-> h (+ 97) char) (-> v (+ 97) char))) 
+                          "b" "x" 
+                          "w" "o" 
+                          nil "+")))
            "|\n")))
-    "----------------------"))
+      (apply str (repeat (+ 2 size) "-")))))
 
-(defn get-near-cells [[x y]]
-  (->> [[(- x 1) y] [(+ x 1) y]
-        [x (- y 1)] [x (+ y 1)]]
-       (filter #(and (>= (first %) 0) (< (first %) 19)
-                     (>= (second %) 0) (< (second %) 19)))))
+(defn char-add [c n] (-> c int (+ n) char))
+(defn get-near-cells [mv size]
+  (->> [(str (char-add (first mv) 1) (second mv))
+        (str (char-add (first mv) -1) (second mv))
+        (str (first mv) (char-add (second mv) 1))
+        (str (first mv) (char-add (second mv) -1))]
+       (filter #(on-board? % size))))
 
 (defn get-group-at
-  ([grid color xy]
-  (get-group-at grid color #{} xy))
+  ([size mvc color mv]
+  (get-group-at size mvc color #{} mv))
 
-  ([grid color found xy]
-  (if (= (grid xy) color)
+  ([size mvc color found mv]
+  (if (= (mvc mv) color)
     (conj 
       (apply ss/union (map 
-        #(get-group-at 
-           grid 
+        #(get-group-at
+           size 
+           mvc
            color 
-           (conj found xy) 
-           %) 
-        (-> xy get-near-cells set (ss/difference found))))
-      xy)
+           (conj found mv) 
+           %)
+        (-> mv (get-near-cells size) set (ss/difference found))))
+      mv)
     found)))
 
-(defn get-dame [grid group] 
+(defn get-dame [size mvc group] 
   (->> group
-      (map get-near-cells)
+      (map #(get-near-cells % size))
       (apply concat)
       set
-      (filter (comp not (partial get grid)))
+      (filter (comp not (partial get mvc)))
       count))
 
-(defn get-move-by-mv [game mv]
-  (first (filter #(= (:mv %) mv) game)))
-
 (defn find-to-eat [game bwid mv] 
-  (let [grid (game-to-grid game)
-        op-color (if (= bwid :bid) :white :black)]
+  (let [mvc (moves-to-mvc (:moves game))
+        op-color (if (= bwid :bid) :white :black)
+        size (:size game)]
     (->> mv
-         mv-to-xy
          get-near-cells
-         (map #(get-group-at grid op-color %))
+         (map #(get-group-at size mvc op-color %))
          (filter seq)
-         (filter #(= 0 (get-dame grid %)))
+         (filter #(= 0 (get-dame size mvc %)))
          (apply ss/union)
-         (map (comp (partial get-move-by-mv game) xy-to-mv)))))
+         (map (partial get-move-by-mv mvc)))))
 
-(defn move [cid uid mv]
-  (let [game (get-game cid)
-        bwid (detect-bwid game uid)
-        state (get-move-state game uid mv bwid)]
-    (if (= state :ok) 
-      (do (insert! db :moves {:cid cid, bwid uid, :mv mv}) 
-          (if (should-end? game mv) (end-game cid))
-          (doall (map mark-eaten (find-to-eat (get-game cid) bwid mv)))))
-    state))
+(defn add-move [game color mv]
+  (println "add-move gid" (:gid game) "color" color "mv" mv)
+  (insert! db :moves {:gid (:gid game) :color color :mv mv})
+  (let [gid (:gid game)
+        updated (get-game gid)]
+    (if (should-end? updated) 
+      (end-game gid)
+      (comment doall (map mark-eaten (find-to-eat updated bwid mv))))))
+
+(defn move [game uid mv]
+  (println "move gid" (:gid game) uid mv)
+  (let [gid (:gid game)
+        {:keys [status color bwid]} (decide-move game uid mv)]
+    (if bwid (update! db :games {bwid uid} ["gid=?" gid]))
+    (if (= status :ok) (add-move game color mv))
+    status))
+
+(defn start-game [cid size]
+  (println "start-game" cid size)
+  (->> {:cid cid :size size}
+       (insert! db :games)
+       first
+       ((keyword "last_insert_rowid()"))
+       get-game))
+
+(defn update-size [game size]
+  (println "update-size gid" (:gid game) size)
+  (update! db :games {:size size} ["gid=?" (:gid game)])
+  (assoc game :size size))
+
+(defn entry [cid uid value] 
+  (let [game (find-game cid)
+        mv (re-find #"^\s*[a-zA-Z]+" value)
+        size (read-string (or (re-find #"^\s*\d+" value) "nil"))]
+    (println "entry mv" mv "size" size)
+    (if mv
+      ;has move coords
+      (if game 
+        (move game uid (-> mv s/trim s/lower-case))
+        (move (start-game cid 19) uid (-> mv s/trim s/lower-case)))
+      ;no move coords
+      (if size 
+        (cond
+          (not (get #{9 13 19} size)) :not-a-size
+          (not game) (do (start-game cid size) :ok)
+          (-> game :moves seq not) (do (update-size game size) :ok)
+          :else :not-a-move) 
+        :not-a-move))))
 

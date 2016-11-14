@@ -17,10 +17,10 @@
 
 (defn handle-move [{{chat-id :id} :chat {user-id :id} :from cmd :text}]
   (let [text (s/replace cmd #"\/move\s" "")
-        res (flow/move chat-id user-id text)]
+        res (flow/entry chat-id user-id text)]
     (if (= res :ok) 
         (send-photo token chat-id (->> chat-id
-                                      flow/get-game
+                                      flow/find-game
                                       (img/get-goban chat-id)
                                       io/resource
                                       io/file))
@@ -28,7 +28,7 @@
 
 (defhandler bot-handler
   (command "start" {user :user} (println "User" user "joined"))
-  (command "move" message (do (println "move handler" message) (handle-move message) "ok"))
+  (command "go" message (do (println "move handler" message) (handle-move message) "ok"))
   (message message (do (println "Intercepted message:" message) "ok")))
 
 (def app
