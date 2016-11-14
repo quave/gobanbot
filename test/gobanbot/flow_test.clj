@@ -32,3 +32,21 @@
           game-many-moves 55 "gygy" {:color nil :status :not-a-player :bwid nil}
           game-many-moves 11 "gygy" {:color "w" :status :not-your-turn :bwid nil})))
 
+(testing "entry"
+  (with-redefs-fn {#'move (constantly "move")
+                   #'find-game (constantly nil)
+                   #'start-game (constantly "start-game")
+                   #'update-size (constantly "update size")}
+    #(are [cid uid text res] (= (entry cid uid text) res)
+          1 1 "9" :ok
+          1 1 "13" :ok
+          1 1 "19" :ok))
+  
+  (with-redefs-fn {#'move (constantly "move")
+                   #'find-game (constantly game-empty)
+                   #'start-game (constantly "start-game")
+                   #'update-size (constantly "update size")}
+    #(are [cid uid text res] (= (entry cid uid text) res)
+          1 1 "9" :ok
+          1 1 "13" :ok
+          1 1 "19" :ok)))

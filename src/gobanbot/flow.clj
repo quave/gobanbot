@@ -75,9 +75,9 @@
   (let [mvc (moves-to-mvc moves)]
     (str 
       (apply str (repeat (+ 2 size) "-")) "\n"
-      (apply str (for [h (range size)]
+      (apply str (for [v (range size)]
         (str "|"
-           (apply str (for [v (range size)] 
+           (apply str (for [h (range size)] 
                         (case (mvc (str (-> h (+ 97) char) (-> v (+ 97) char))) 
                           "b" "x" 
                           "w" "o" 
@@ -94,8 +94,12 @@
        (filter #(on-board? % size))))
 
 (defn get-group-at
-  ([size mvc color mv]
-  (get-group-at size mvc color #{} mv))
+  ([{:keys [size moves]} color mv]
+    (get-group-at size 
+                  (moves-to-mvc moves) 
+                  color 
+                  #{} 
+                  mv))
 
   ([size mvc color found mv]
   (if (= (mvc mv) color)
@@ -111,25 +115,24 @@
       mv)
     found)))
 
-(defn get-dame [size mvc group] 
+(defn get-dame [{:keys [size moves]} group] 
+  (let [mvc (moves-to-mvc moves)]
   (->> group
       (map #(get-near-cells % size))
       (apply concat)
       set
       (filter (comp not (partial get mvc)))
-      count))
+      count)))
 
-(defn find-to-eat [game bwid mv] 
-  (let [mvc (moves-to-mvc (:moves game))
-        op-color (if (= bwid :bid) :white :black)
-        size (:size game)]
+(defn find-to-eat [{:keys [size moves] :as game} color mv] 
+  (let [op-color (if (= color "b") "w" "b")]
     (->> mv
-         get-near-cells
-         (map #(get-group-at size mvc op-color %))
+         (#(get-near-cells % size))
+         (map #(get-group-at game op-color %))
          (filter seq)
-         (filter #(= 0 (get-dame size mvc %)))
+         (filter #(= 0 (get-dame game %)))
          (apply ss/union)
-         (map (partial get-move-by-mv mvc)))))
+         (map #(get-move-by-mv moves %)))))
 
 (defn add-move [game color mv]
   (println "add-move gid" (:gid game) "color" color "mv" mv)
@@ -138,7 +141,7 @@
         updated (get-game gid)]
     (if (should-end? updated) 
       (end-game gid)
-      (comment doall (map mark-eaten (find-to-eat updated bwid mv))))))
+      (doall (map mark-eaten (find-to-eat updated color mv))))))
 
 (defn move [game uid mv]
   (println "move gid" (:gid game) uid mv)
