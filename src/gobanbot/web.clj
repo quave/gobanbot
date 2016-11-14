@@ -16,7 +16,7 @@
 (def token "162694958:AAGu9QiYPEm9ADwSYtEGEZ83G_9420ZvWok")
 
 (defn handle-move [{{chat-id :id} :chat {user-id :id} :from cmd :text}]
-  (let [text (s/replace cmd #"\/move\s" "")
+  (let [text (s/replace cmd #"\/go\s" "")
         res (flow/entry chat-id user-id text)]
     (if (= res :ok) 
         (send-photo token chat-id (->> chat-id

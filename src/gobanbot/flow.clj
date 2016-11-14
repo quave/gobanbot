@@ -168,7 +168,7 @@
   (let [game (find-game cid)
         mv (re-find #"^\s*[a-zA-Z]+" value)
         size (read-string (or (re-find #"^\s*\d+" value) "nil"))]
-    (println "entry mv" mv "size" size)
+    (println "entry mv" mv "size" size "text" value)
     (if mv
       ;has move coords
       (if game 
