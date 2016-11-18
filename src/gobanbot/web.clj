@@ -20,7 +20,7 @@
         res (flow/entry chat-id user-id text)]
     (if (= res :ok) 
         (send-photo token chat-id (->> chat-id
-                                      flow/find-game
+                                      flow/last-game
                                       (img/get-goban chat-id)
                                       io/resource
                                       io/file))

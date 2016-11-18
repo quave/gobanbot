@@ -19,6 +19,10 @@
   (update! db :moves {:eaten 1} ["mid=?" (:mid move)]))
 
 (defn find-game [cid]
+  (if-let [game (first (query db (str "select * from games where ended=0 and cid=" cid)))]
+    (assoc game :moves (get-moves (:gid game)))))
+
+(defn last-game [cid]
   (if-let [game (first (query db (str "select * from games where cid=" cid 
                                       " order by gid desc limit 1")))]
     (assoc game :moves (get-moves (:gid game)))))
@@ -181,6 +185,6 @@
           (not (get #{9 13 19} size)) :not-a-size
           (not game) (do (start-game cid size) :ok)
           (-> game :moves seq not) (do (update-size game size) :ok)
-          :else :not-a-move) 
+          :else :ok) 
         :not-a-move))))
 
