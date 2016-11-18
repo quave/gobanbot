@@ -19,7 +19,8 @@
   (update! db :moves {:eaten 1} ["mid=?" (:mid move)]))
 
 (defn find-game [cid]
-  (if-let [game (first (query db (str "select * from games where ended=0 and cid=" cid)))]
+  (if-let [game (first (query db (str "select * from games where cid=" cid 
+                                      " order by gid desc limit 1")))]
     (assoc game :moves (get-moves (:gid game)))))
 
 (defn get-game [gid]

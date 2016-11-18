@@ -14,20 +14,20 @@
 (defn xy-to-circle [xy color]
   (let [style (if (= color "b") 
                 {:fill :black} 
-                {:stroke :black :fill :white :width 3})]
+                {:stroke :black :fill :white :stroke-width 3})]
     [:circle style (vec (map #(-> % (* cell-size) (+ cell-size)) xy)) (* 0.45 cell-size)]))
 
 (defn get-stones [moves]
   (map (fn [{:keys [mv color]}] 
          (xy-to-circle (mv-to-xy mv) color))
-    moves))
+    (filter #(-> % :mv count (<= 2)) moves)))
 
 (defn get-last-move [{:keys [mv color] :as move}]
-  (if move
+  (if (and move (<= (count mv) 2))
     (let [xy (mv-to-xy mv)
           style (case color 
-                  "b" {:stroke :white :fill :black :width 3}
-                  "w" {:stroke :black :fill :white :width 3})]
+                  "b" {:stroke :white :fill :black :stroke-width 3}
+                  "w" {:stroke :black :fill :white :stroke-width 3})]
       [[:circle style 
                (vec (map #(-> % (* cell-size) (+ cell-size)) xy)) 
                (* 0.3 cell-size)]])))
