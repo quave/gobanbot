@@ -14,13 +14,23 @@
 (defn xy-to-circle [xy color]
   (let [style (if (= color "b") 
                 {:fill :black} 
-                {:stroke :black :fill :white :width 1})]
+                {:stroke :black :fill :white :width 3})]
     [:circle style (vec (map #(-> % (* cell-size) (+ cell-size)) xy)) (* 0.45 cell-size)]))
 
 (defn get-stones [moves]
   (map (fn [{:keys [mv color]}] 
          (xy-to-circle (mv-to-xy mv) color))
     moves))
+
+(defn get-last-move [{:keys [mv color] :as move}]
+  (if move
+    (let [xy (mv-to-xy mv)
+          style (case color 
+                  "b" {:stroke :white :fill :black :width 3}
+                  "w" {:stroke :black :fill :white :width 3})]
+      [[:circle style 
+               (vec (map #(-> % (* cell-size) (+ cell-size)) xy)) 
+               (* 0.3 cell-size)]])))
 
 (defn get-hlines [size]
   (map 
@@ -41,6 +51,15 @@
              (-> i (+ 97) char str)])
     (range size)))
 
+(defn get-stars [size]
+  (map (fn [xy] [:circle {:fill :black} 
+         (vec (map #(-> % (* cell-size) (+ cell-size)) xy)) 
+         (* 0.1 cell-size)])
+    (case size
+      9 [[2 2] [2 6] [6 2] [6 6] [4 4]]
+      13 [[2 2] [2 6] [2 10] [6 2] [6 6] [6 10] [10 2] [10 6] [10 10]]
+      19 [[3 3] [3 9] [3 15] [9 3] [9 9] [9 15] [15 3] [15 9] [15 15]])))
+
 (defn get-vtext [size]
   (map
     (fn [i] [:text {:font-family "sans-serif" :font-size 72 :x 10 :y (+ 122 (* i cell-size))}  
@@ -52,9 +71,11 @@
     (svg/render-png (vec (concat [:dali/page] 
                                  (get-hlines (:size game)) 
                                  (get-vlines (:size game))
+                                 (get-stars (:size game))
                                  (get-htext (:size game))
                                  (get-vtext (:size game))
-                                 (get-stones (:moves game))))
+                                 (get-stones (:moves game))
+                                 (get-last-move (-> game :moves last))))
                     (str "resources/" f-n))
     f-n))
 
