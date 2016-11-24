@@ -18,18 +18,18 @@
   (println "mark-eaten" move)
   (update! db :moves {:eaten 1} ["mid=?" (:mid move)]))
 
-(defn find-game [cid]
-  (if-let [game (first (query db (str "select * from games where ended=0 and cid=" cid)))]
+(defn get-game-where [clause]
+  (if-let [game (first (query db (str "select * from games where " clause)))]
     (assoc game :moves (get-moves (:gid game)))))
+
+(defn find-game [cid]
+  (get-game-where (str "ended=0 and cid=" cid)))
 
 (defn last-game [cid]
-  (if-let [game (first (query db (str "select * from games where cid=" cid 
-                                      " order by gid desc limit 1")))]
-    (assoc game :moves (get-moves (:gid game)))))
+  (get-game-where (str "cid=" cid " order by gid desc limit 1")))
 
 (defn get-game [gid]
-  (if-let [game (first (query db (str "select * from games where gid=" gid)))]
-    (assoc game :moves (get-moves (:gid game)))))
+  (get-game-where (str "gid=" gid)))
 
 (defn end-game [gid] 
   (println "end-game" gid)
