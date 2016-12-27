@@ -169,6 +169,7 @@
   (update! db :games {:size size} ["gid=?" (:gid game)])
   (assoc game :size size))
 
+
 (defn entry [cid uid value] 
   (let [game (find-game cid)
         mv (re-find #"^\s*[a-zA-Z]+" value)

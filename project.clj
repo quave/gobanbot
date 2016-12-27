@@ -14,7 +14,8 @@
                  [ring/ring-defaults "0.1.2"]
                  [org.clojure/java.jdbc "0.3.5"]
                  [org.xerial/sqlite-jdbc "3.7.2"]]
-  :main ^:skip-aot gobanbot.web
+  :main gobanbot.web
+  :aot [gobanbot.web]
   :uberjar-name "gobanbot-standalone.jar"
   :plugins [[lein-ring "0.9.7"]]
   :ring {:handler gobanbot.web/app}

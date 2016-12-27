@@ -1,4 +1,5 @@
 (ns gobanbot.web
+  (:gen-class)
   (:require [gobanbot.image :as img]
             [gobanbot.flow :as flow]
             [compojure.api.sweet :refer :all]
@@ -27,7 +28,7 @@
         (send-text token chat-id (str "Can't move " res)))))
 
 (defhandler bot-handler
-  (command "start" {user :user} (println "User" user "joined"))
+  (command "start" {user :user} (do (println "User" user "joined") "ok"))
   (command "go" message (do (println "move handler" message) (handle-move message) "ok"))
   (message message (do (println "Intercepted message:" message) "ok")))
 
@@ -39,14 +40,19 @@
                      (ex/with-logging ex/request-parsing-handler :info)
                    ::ex/response-validation 
                      (ex/with-logging ex/response-validation-handler :error)}}}
-
     (context "/api" []
       :tags ["api"]
       (POST "/update" []
         :return scm/Str
         :body [up scm/Any]
         :summary "gets updates"
-        (ok (bot-handler up))))))
+        (ok (do (println "Incoming update" up) 
+                (bot-handler up)))))))
+
+(defn content-logger [handler]
+  (fn [content]
+    (println "Incoming request" content)
+    (handler content)))
 
 (defn -main []
   (run-jetty 
@@ -55,7 +61,8 @@
           {:logger (reify logger.protocols/Logger
                      (add-extra-middleware [_ handler] handler)
                      (log [_ level throwable msg]
-                       (println (name level) "-" msg)))}))
+                       (println (name level) "-" msg)))})
+        content-logger)
     {:port 8080
      :ssl-port  8443
      :join?     false
