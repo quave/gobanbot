@@ -16,20 +16,38 @@
 
 (def token "162694958:AAGu9QiYPEm9ADwSYtEGEZ83G_9420ZvWok")
 
-(defn handle-move [{{chat-id :id} :chat {user-id :id} :from cmd :text}]
-  (let [text (s/replace cmd #"\/go\s" "")
-        res (flow/entry chat-id user-id text)]
-    (if (= res :ok) 
-        (send-photo token chat-id (->> chat-id
-                                      flow/last-game
-                                      (img/get-goban chat-id)
-                                      io/resource
-                                      io/file))
-        (send-text token chat-id (str "Can't move " res)))))
+(defn send-answer! [chat-id status]
+  (if (= status :ok)
+    (send-photo token 
+                chat-id 
+                (->> chat-id
+                     flow/last-game
+                     (img/get-goban chat-id)
+                     io/resource
+                     io/file))
+    (send-text token chat-id (str "Can't move " status))))
+
+(defn parse-cmd [cmd]
+  (let [[_ cmd value] (re-find #"(?i)^\/(\w+)\s+(.*)$" cmd)]
+    {:cmd (if cmd (s/trim cmd) nil) 
+     :value (if value (s/trim value) nil)}))
+
+(defn handle-cmd! 
+  [{{chat-id :id} :chat 
+    {user-id :id} :from 
+    cmd :text 
+    :as message}]
+  (println "msg handler" message)
+  (let [{cmd-text :cmd value :value} (parse-cmd cmd)]
+    (->> (flow/dispatch! chat-id user-id cmd-text value)
+         (send-answer! chat-id)))
+  "ok")
 
 (defhandler bot-handler
   (command "start" {user :user} (do (println "User" user "joined") "ok"))
-  (command "go" message (do (println "move handler" message) (handle-move message) "ok"))
+  (command "go" message (handle-cmd! message))
+  (command "size" message (handle-cmd! message))
+  (command "handicap" message (handle-cmd! message))
   (message message (do (println "Intercepted message:" message) "ok")))
 
 (def app

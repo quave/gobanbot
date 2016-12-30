@@ -189,3 +189,8 @@
           :else :ok) 
         :not-a-move))))
 
+(defn dispatch! [cid uid cmd value]
+  (case cmd
+    "go" (entry cid uid value)
+    "size" (entry cid uid value)
+    "handicap" :ok))
