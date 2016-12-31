@@ -1,7 +1,8 @@
 (ns gobanbot.web
   (:gen-class)
   (:require [gobanbot.image :as img]
-            [gobanbot.flow :as flow]
+            [gobanbot.dispatcher :as dispatcher]
+            [gobanbot.storage :as storage]
             [compojure.api.sweet :refer :all]
             [compojure.api.exception :as ex]
             [ring.util.http-response :refer :all]
@@ -21,14 +22,14 @@
     (send-photo token 
                 chat-id 
                 (->> chat-id
-                     flow/last-game
+                     storage/last-game
                      (img/get-goban chat-id)
-                     io/resource
+                     (str (System/getProperty "java.io.tmpdir") "/gobanbot/")
                      io/file))
     (send-text token chat-id (str "Can't move " status))))
 
 (defn parse-cmd [cmd]
-  (let [[_ cmd value] (re-find #"(?i)^\/(\w+)\s+(.*)$" cmd)]
+  (let [[_ cmd value] (re-find #"(?i)^\/(\w+)\s*(.*)?$" cmd)]
     {:cmd (if cmd (s/trim cmd) nil) 
      :value (if value (s/trim value) nil)}))
 
@@ -39,7 +40,7 @@
     :as message}]
   (println "msg handler" message)
   (let [{cmd-text :cmd value :value} (parse-cmd cmd)]
-    (->> (flow/dispatch! chat-id user-id cmd-text value)
+    (->> (dispatcher/dispatch! chat-id user-id cmd-text value)
          (send-answer! chat-id)))
   "ok")
 

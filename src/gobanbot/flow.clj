@@ -1,39 +1,12 @@
 (ns gobanbot.flow
-  (:require [clojure.java.jdbc :refer :all]
-            [clojure.string :as s]
-            [clojure.set :as ss]))
+  (:require [clojure.string :as s]
+            [clojure.set :as ss]
+            [gobanbot.storage :as storage]))
 
-(def db
-  {:classname   "org.sqlite.JDBC"
-   :subprotocol "sqlite"
-   :subname     "resources/storage.db" }) 
-
-(defn get-moves [gid]
-  (seq (query db (str "select * from moves where eaten=0 and gid=" gid))))
 (defn moves-to-mvc [moves] (zipmap (map :mv moves) (map :color moves)))
-(def get-last-color (comp :color last))
 (defn get-color [moves mv]  (get (moves-to-mvc moves) mv))
 (defn get-move-by-mv [moves mv] (first (filter #(= (:mv %) mv) moves)))
-(defn mark-eaten [move] 
-  (println "mark-eaten" move)
-  (update! db :moves {:eaten 1} ["mid=?" (:mid move)]))
-
-(defn get-game-where [clause]
-  (if-let [game (first (query db (str "select * from games where " clause)))]
-    (assoc game :moves (get-moves (:gid game)))))
-
-(defn find-game [cid]
-  (get-game-where (str "ended=0 and cid=" cid)))
-
-(defn last-game [cid]
-  (get-game-where (str "cid=" cid " order by gid desc limit 1")))
-
-(defn get-game [gid]
-  (get-game-where (str "gid=" gid)))
-
-(defn end-game [gid] 
-  (println "end-game" gid)
-  (update! db :games {:ended 1} ["gid=?" gid]))
+(def get-last-color (comp :color last))
 
 (defn on-board? [mv size]
   (let [min-move 97
@@ -139,58 +112,19 @@
          (apply ss/union)
          (map #(get-move-by-mv moves %)))))
 
-(defn add-move [game color mv]
-  (println "add-move gid" (:gid game) "color" color "mv" mv)
-  (insert! db :moves {:gid (:gid game) :color color :mv mv})
+(defn add-move! [game color mv]
+  (storage/insert-move! game color mv)
   (let [gid (:gid game)
-        updated (get-game gid)]
+        updated (storage/get-game gid)]
     (if (should-end? updated) 
-      (end-game gid)
-      (doall (map mark-eaten (find-to-eat updated color mv))))))
+      (storage/end-game! gid)
+      (doall (map storage/mark-eaten! (find-to-eat updated color mv))))))
 
-(defn move [game uid mv]
+(defn move! [game uid mv]
   (println "move gid" (:gid game) uid mv)
   (let [gid (:gid game)
         {:keys [status color bwid]} (decide-move game uid mv)]
-    (if bwid (update! db :games {bwid uid} ["gid=?" gid]))
-    (if (= status :ok) (add-move game color mv))
+    (if bwid (storage/set-player! gid bwid uid))
+    (if (= status :ok) (add-move! game color mv))
     status))
 
-(defn start-game [cid size]
-  (println "start-game" cid size)
-  (->> {:cid cid :size size}
-       (insert! db :games)
-       first
-       ((keyword "last_insert_rowid()"))
-       get-game))
-
-(defn update-size [game size]
-  (println "update-size gid" (:gid game) size)
-  (update! db :games {:size size} ["gid=?" (:gid game)])
-  (assoc game :size size))
-
-
-(defn entry [cid uid value] 
-  (let [game (find-game cid)
-        mv (re-find #"^\s*[a-zA-Z]+" value)
-        size (read-string (or (re-find #"^\s*\d+" value) "nil"))]
-    (println "entry mv" mv "size" size "text" value)
-    (if mv
-      ;has move coords
-      (if game 
-        (move game uid (-> mv s/trim s/lower-case))
-        (move (start-game cid 19) uid (-> mv s/trim s/lower-case)))
-      ;no move coords
-      (if size 
-        (cond
-          (not (get #{9 13 19} size)) :not-a-size
-          (not game) (do (start-game cid size) :ok)
-          (-> game :moves seq not) (do (update-size game size) :ok)
-          :else :ok) 
-        :not-a-move))))
-
-(defn dispatch! [cid uid cmd value]
-  (case cmd
-    "go" (entry cid uid value)
-    "size" (entry cid uid value)
-    "handicap" :ok))

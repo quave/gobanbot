@@ -60,7 +60,11 @@
                (get-last-move (-> game :moves last)))))
 
 (defn get-goban [filename game]
-(let [f-n (str filename ".png")]
-  (svg/render-png (get-svg-data game) (str "resources/" f-n))
-  f-n))
+  (let [f-n (str filename ".png")
+        dir (str (System/getProperty "java.io.tmpdir") "/gobanbot/")]
+    (.mkdir (java.io.File. dir))
+    (svg/render-png 
+      (get-svg-data game) 
+      (str dir f-n))
+    f-n))
 
