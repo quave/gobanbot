@@ -8,38 +8,41 @@
 (defn get-move-by-mv [moves mv] (first (filter #(= (:mv %) mv) moves)))
 (def get-last-color (comp :color last))
 
-(defn on-board? [mv size]
-  (let [min-move 97
-        max-move (+ 96 size)]
-    (and (-> mv count (= 2))
-         (-> mv first int (>= min-move))
-         (-> mv first int (<= max-move))
-         (-> mv second int (>= min-move))
-         (-> mv second int (<= max-move)))))
+(defn is-move? [size value]
+  (let [max-letter (-> size (+ 96) char str)]
+  (if-not (empty? value)
+    (re-find (re-pattern 
+               (str 
+                 "^[a-" 
+                 max-letter 
+                 "]{2}$|^pass$|^resigni$")) 
+             value))))
 
-(defn guess-color [{:keys [bid wid]} uid]
+(defn guess-bwid [{:keys [bid wid handicap]} uid]
   (cond
-    (or (not bid) (= bid uid)) "b"
-    (or (not wid) (= wid uid)) "w"))
+    (= bid uid) :bid
+    (= wid uid) :wid
+    :else (if (= 0 handicap)
+            (cond (not bid) :bid
+                  (not wid) :wid)
+            (cond (not wid) :wid
+                  (not bid) :bid))))
 
-(defn decide-move [game uid  mv]
-  (let [moves (:moves game)
-        color (guess-color game uid)
-        bid (:bid game)
-        wid (:wid game)
-        bwid (cond (not bid) :bid (and (not wid) (not= bid uid)) :wid)]
+(defn decide-move 
+  [{:keys [moves bid wid ended started] :as game} uid  mv]
+  (let [bwid (guess-bwid game uid)
+        color (cond (= bwid :bid) "b" (= bwid :wid) "w")]
     {:bwid bwid
      :color color
      :status
      (cond 
        (not game) :no-game
        (not color) :not-a-player
-       (-> game :moves get-last-color (= color)) :not-your-turn
+       (= started 0) :not-started
+       (-> moves get-last-color (= color)) :not-your-turn
        (and (get-color moves mv) (not= mv "pass")) :ocupied
-       (= (:ended game) 1) :no-game
-       (#{"pass" "resign"} mv) :ok
-       (on-board? mv (:size game)) :ok
-       :else :not-a-move)}))
+       (= ended 1) :no-game
+       :else :ok)}))
 
 (defn should-end? [game]
   (or (->> game :moves (some #(= "resign" (:mv %))))
@@ -69,7 +72,7 @@
         (str (char-add (first mv) -1) (second mv))
         (str (first mv) (char-add (second mv) 1))
         (str (first mv) (char-add (second mv) -1))]
-       (filter #(on-board? % size))))
+       (filter #(is-move? size %))))
 
 (defn get-group-at
   ([{:keys [size moves]} color mv]
@@ -123,7 +126,8 @@
 (defn move! [game uid mv]
   (println "move gid" (:gid game) uid mv)
   (let [gid (:gid game)
-        {:keys [status color bwid]} (decide-move game uid mv)]
+        {:keys [status color bwid] :as stat} (decide-move game uid mv)]
+    (println "move status" stat)
     (if bwid (storage/set-player! gid bwid uid))
     (if (= status :ok) (add-move! game color mv))
     status))
