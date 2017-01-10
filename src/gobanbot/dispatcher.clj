@@ -1,6 +1,7 @@
 (ns gobanbot.dispatcher
   (:require [clojure.string :as s]
             [gobanbot.flow :as flow]
+            [gobanbot.score :as score]
             [gobanbot.storage :as storage]))
 
 (defn find-or-create-game [cid]
@@ -84,6 +85,7 @@
                                put-handicap!)
                            :ok)
                        :not-a-handicap)
-                     :already-started))
+                     :already-started)
+        "estimate" (score/estimate game))
       :ended)))
 

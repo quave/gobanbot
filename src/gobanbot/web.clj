@@ -44,11 +44,19 @@
          (send-answer! chat-id)))
   "ok")
 
+(defn handle-estimate! 
+  [{{chat-id :id} :chat :as message}]
+  (println "score handler" message)
+  (->> (dispatcher/dispatch! chat-id 0 "estimate" "")
+       (send-text token chat-id))
+  "ok")
+
 (defhandler bot-handler
   (command "start" {user :user} (do (println "User" user "joined") "ok"))
   (command "go" message (handle-cmd! message))
   (command "size" message (handle-cmd! message))
   (command "handicap" message (handle-cmd! message))
+  (command "estimate" message (handle-estimate! message))
   (message message (do (println "Intercepted message:" message) "ok")))
 
 (def app
