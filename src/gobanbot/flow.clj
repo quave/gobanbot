@@ -18,19 +18,19 @@
                  "]{2}$|^pass$|^resigni$")) 
              value))))
 
-(defn guess-bwid [{:keys [bid wid handicap]} uid]
+(defn next-bwid [{:keys [bid wid handicap]} uid]
   (cond
-    (= bid uid) :bid
-    (= wid uid) :wid
-    :else (if (= 0 handicap)
+    (= bid uid) :bid ; already in game
+    (= wid uid) :wid ; already in game
+    :else (if (or (nil? handicap) (zero? handicap))
             (cond (not bid) :bid
                   (not wid) :wid)
             (cond (not wid) :wid
                   (not bid) :bid))))
 
 (defn decide-move 
-  [{:keys [moves bid wid ended started] :as game} uid  mv]
-  (let [bwid (guess-bwid game uid)
+  [{:keys [moves bid wid ended started] :as game} uid mv]
+  (let [bwid (next-bwid game uid)
         color (cond (= bwid :bid) "b" (= bwid :wid) "w")]
     {:bwid bwid
      :color color

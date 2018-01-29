@@ -13,14 +13,15 @@
             [morse.handlers :refer :all]
             [morse.api :refer :all]
             [clojure.java.io :as io]
-            [clojure.string :as s]))
+            [clojure.string :as s]
+            [clojure.pprint :refer :all]))
 
 (def token "162694958:AAGu9QiYPEm9ADwSYtEGEZ83G_9420ZvWok")
 
 (defn send-answer! [chat-id status]
   (if (= status :ok)
-    (send-photo token 
-                chat-id 
+    (send-photo token
+                chat-id
                 (->> chat-id
                      storage/last-game
                      (img/get-goban chat-id)
@@ -30,13 +31,13 @@
 
 (defn parse-cmd [cmd]
   (let [[_ cmd value] (re-find #"(?i)^\/(\w+)\s*(.*)?$" cmd)]
-    {:cmd (if cmd (s/trim cmd) nil) 
+    {:cmd (if cmd (s/trim cmd) nil)
      :value (if value (s/trim value) nil)}))
 
-(defn handle-cmd! 
-  [{{chat-id :id} :chat 
-    {user-id :id} :from 
-    cmd :text 
+(defn handle-cmd!
+  [{{chat-id :id} :chat
+    {user-id :id} :from
+    cmd :text
     :as message}]
   (println "msg handler" message)
   (let [{cmd-text :cmd value :value} (parse-cmd cmd)]
@@ -44,10 +45,11 @@
          (send-answer! chat-id)))
   "ok")
 
-(defn handle-estimate! 
+(defn handle-estimate!
   [{{chat-id :id} :chat :as message}]
   (println "score handler" message)
   (->> (dispatcher/dispatch! chat-id 0 "estimate" "")
+       ; TODO estimate
        (send-text token chat-id))
   "ok")
 
@@ -63,9 +65,9 @@
   (api
     {:formats [:json]
      :exceptions {:handlers
-                  {::ex/request-parsing 
+                  {::ex/request-parsing
                      (ex/with-logging ex/request-parsing-handler :info)
-                   ::ex/response-validation 
+                   ::ex/response-validation
                      (ex/with-logging ex/response-validation-handler :error)}}}
     (context "/api" []
       :tags ["api"]
@@ -73,16 +75,18 @@
         :return scm/Str
         :body [up scm/Any]
         :summary "gets updates"
-        (ok (do (println "Incoming update" up) 
+        (ok (do (println "Incoming update")
+                (pprint up)
                 (bot-handler up)))))))
 
 (defn content-logger [handler]
   (fn [content]
-    (println "Incoming request" content)
+    (pprint "Incoming request")
+    (pprint content)
     (handler content)))
 
 (defn -main []
-  (run-jetty 
+  (run-jetty
     (-> app
         (logger/wrap-with-logger
           {:logger (reify logger.protocols/Logger

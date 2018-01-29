@@ -1,14 +1,15 @@
 # gobanbot
 
-A Clojure library designed to ... well, that part is up to you.
+Go game temegram bot implemented on Clojure
 
-## Usage
+## CMDs
 
-FIXME
+git clone htts://github.com/quave/gobanbot
+lein run
+https://core.telegram.org/bots/api
 
 ## License
 
-Copyright © 2016 FIXME
-
+Copyright © 2018
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.
