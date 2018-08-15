@@ -4,16 +4,16 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.8.0"]
-                 [clj-time "0.11.0"]
-                 [clj-http "2.0.0"]
-                 [metosin/compojure-api "1.0.0"]
-                 [ring-logger "0.7.6"]
-                 [ring/ring-jetty-adapter "1.4.0"]
-                 [morse "0.2.1"]
-                 [dali "0.7.3"]
-                 [ring/ring-defaults "0.1.2"]
-                 [org.clojure/java.jdbc "0.3.5"]
-                 [org.xerial/sqlite-jdbc "3.7.2"]]
+                 [clj-time "0.14.4"]
+                 [clj-http "3.9.1"]
+                 [metosin/compojure-api "1.1.12"]
+                 [ring-logger "1.0.1"]
+                 [ring/ring-jetty-adapter "1.6.3"]
+                 [morse "0.4.0"]
+                 [dali "0.7.4"]
+                 [ring/ring-defaults "0.3.2"]
+                 [org.clojure/java.jdbc "0.7.8"]
+                 [org.xerial/sqlite-jdbc "3.23.1"]]
   :main gobanbot.web
   :aot [gobanbot.web]
   :uberjar-name "gobanbot-standalone.jar"

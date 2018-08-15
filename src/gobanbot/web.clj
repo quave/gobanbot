@@ -8,7 +8,6 @@
             [ring.util.http-response :refer :all]
             [schema.core :as scm]
             [ring.adapter.jetty :refer :all]
-            [ring.logger.protocols :as logger.protocols]
             [ring.logger :as logger]
             [morse.handlers :refer :all]
             [morse.api :refer :all]
@@ -68,16 +67,24 @@
                   {::ex/request-parsing
                      (ex/with-logging ex/request-parsing-handler :info)
                    ::ex/response-validation
-                     (ex/with-logging ex/response-validation-handler :error)}}}
+                     (ex/with-logging ex/response-validation-handler :error)
+                   ::ex/default (ex/with-logging internal-server-error :error)}}}
     (context "/api" []
       :tags ["api"]
+      (GET "/test" []
+        :return {:result scm/Str}
+        :summary "test"
+        (ok {:result "test ok"}))
       (POST "/update" []
         :return scm/Str
         :body [up scm/Any]
         :summary "gets updates"
         (ok (do (println "Incoming update")
                 (pprint up)
-                (bot-handler up)))))))
+                (bot-handler up)))))
+    (ANY "/*" []
+      :responses {404 String}
+      (not-found "These aren't the droids you're looking for."))))
 
 (defn content-logger [handler]
   (fn [content]
@@ -88,12 +95,9 @@
 (defn -main []
   (run-jetty
     (-> app
-        (logger/wrap-with-logger
-          {:logger (reify logger.protocols/Logger
-                     (add-extra-middleware [_ handler] handler)
-                     (log [_ level throwable msg]
-                       (println (name level) "-" msg)))})
-        content-logger)
+        logger/wrap-log-response
+        content-logger
+        logger/wrap-log-request-start)
     {:port 8080
      :ssl-port  8443
      :join?     false
