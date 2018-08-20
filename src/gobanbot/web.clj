@@ -18,9 +18,10 @@
 
 (def token "162694958:AAGu9QiYPEm9ADwSYtEGEZ83G_9420ZvWok")
 
-(log/info "startup")
+(log/info "Startup")
 
 (defn send-answer! [chat-id status]
+  (log/debug "send-answer!" chat-id status)
   (if (= status :ok)
     (send-photo token
                 chat-id
@@ -43,6 +44,7 @@
     :as message}]
   (println "msg handler" message)
   (let [{cmd-text :cmd value :value} (parse-cmd cmd)]
+    (log/debug "Command parsed" cmd-text value)
     (->> (dispatcher/dispatch! chat-id user-id cmd-text value)
          (send-answer! chat-id)))
   "ok")

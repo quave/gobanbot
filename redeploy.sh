@@ -4,7 +4,12 @@ cd /home/ec2-user/src/gobanbot
 git pull
 docker build -t vladsynkov/gobanbot .
 docker rm -f gobanbot
-docker run -p 8443:8443 -d --name gobanbot vladsynkov/gobanbot
+docker run -d \
+  -p 8443:8443 \
+  -v "$(pwd)"/log:/usr/src/app/log \
+  -v "$(pwd)"/resources:/usr/src/app/resources \
+  --name gobanbot \
+  vladsynkov/gobanbot
 docker ps -a
 
 # sshaws "sh /home/ec2-user/src/gobanbot/redeploy.sh"

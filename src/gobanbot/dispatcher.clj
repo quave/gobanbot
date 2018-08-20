@@ -1,5 +1,6 @@
 (ns gobanbot.dispatcher
   (:require [clojure.string :as s]
+            [clojure.tools.logging :as log]
             [gobanbot.flow :as flow]
             [gobanbot.score :as score]
             [gobanbot.storage :as storage]))
@@ -17,6 +18,7 @@
     19 (re-find #"^[02-9]$" value)))
 
 (defn dispatch-go! [{:keys [size started] :as game} uid value]
+  (log/debug "dispatch-go! size started game uid value" size started game uid value)
   (if-not (empty? value)
     (if (flow/is-move? size value)
       (do
@@ -65,6 +67,7 @@
     (storage/set-handicap! game 0)))
 
 (defn dispatch! [cid uid cmd value]
+  (log/debug "dispatch! cid uid cmd value" cid uid cmd value)
   (let [{:keys [started ended size] :as game}
         (find-or-create-game cid)]
     (if (= ended 0)

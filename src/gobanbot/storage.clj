@@ -5,7 +5,7 @@
 (def db
   {:classname   "org.sqlite.JDBC"
    :subprotocol "sqlite"
-   :subname     "resources/storage.db" }) 
+   :subname     "resources/storage.db" })
 
 (defn get-moves [gid]
   (seq (query db (str "select * from moves where eaten=0 and gid=" gid))))
@@ -23,12 +23,12 @@
 (defn get-game [gid]
   (get-game-where (str "gid=" gid)))
 
-(defn end-game! [{gid :gid :as game}] 
+(defn end-game! [{gid :gid :as game}]
   (println "end-game!" gid)
   (update! db :games {:ended 1} ["gid=?" gid])
   (assoc game :ended 1))
 
-(defn start-game! [{gid :gid :as game}] 
+(defn start-game! [{gid :gid :as game}]
   (println "start-game!" gid)
   (update! db :games {:started 1} ["gid=?" gid])
   (assoc game :started 1))
@@ -60,7 +60,7 @@
   (println "add-move gid" (:gid game) "color" color "mv" mv)
   (insert! db :moves {:gid (:gid game) :color color :mv mv}))
 
-(defn mark-eaten! [move] 
+(defn mark-eaten! [move]
   (println "mark-eaten" move)
   (update! db :moves {:eaten 1} ["mid=?" (:mid move)]))
 
