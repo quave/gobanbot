@@ -9,6 +9,7 @@
             [schema.core :as scm]
             [ring.adapter.jetty :refer :all]
             [ring.logger :as logger]
+            [clojure.tools.logging :as log]
             [morse.handlers :refer :all]
             [morse.api :refer :all]
             [clojure.java.io :as io]
@@ -16,6 +17,8 @@
             [clojure.pprint :refer :all]))
 
 (def token "162694958:AAGu9QiYPEm9ADwSYtEGEZ83G_9420ZvWok")
+
+(log/info "startup")
 
 (defn send-answer! [chat-id status]
   (if (= status :ok)

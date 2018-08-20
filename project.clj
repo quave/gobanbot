@@ -9,6 +9,11 @@
                  [metosin/compojure-api "1.1.12"]
                  [ring-logger "1.0.1"]
                  [ring/ring-jetty-adapter "1.6.3"]
+                 [org.clojure/tools.logging "0.4.1"]
+                 [log4j/log4j "1.2.17" :exclusions [javax.mail/mail
+                                                 javax.jms/jms
+                                                 com.sun.jmdk/jmxtools
+                                                 com.sun.jmx/jmxri]]
                  [morse "0.4.0"]
                  [dali "0.7.4"]
                  [ring/ring-defaults "0.3.2"]

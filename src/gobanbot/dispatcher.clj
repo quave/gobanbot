@@ -10,8 +10,8 @@
     (storage/create-game! cid)))
 
 (defn is-size? [value] (#{"9" "13" "19"} value))
-(defn is-handicap? [size value] 
-  (case size 
+(defn is-handicap? [size value]
+  (case size
     9 (re-find #"^[02-5]$" value)
     13 (re-find #"^[02-9]$" value)
     19 (re-find #"^[02-9]$" value)))
@@ -37,9 +37,9 @@
   (storage/clear-moves! game)
   (case size
     9 (case handicap
-        2 (insert-moves! game "b" ["cc" "gg"]) 
-        3 (insert-moves! game "b" ["cc" "gg" "gc"]) 
-        4 (insert-moves! game "b" ["cc" "gg" "gc" "cg"]) 
+        2 (insert-moves! game "b" ["cc" "gg"])
+        3 (insert-moves! game "b" ["cc" "gg" "gc"])
+        4 (insert-moves! game "b" ["cc" "gg" "gc" "cg"])
         5 (insert-moves! game "b" ["cc" "gg" "gc" "cg" "ee"])
         (storage/set-handicap! game 0))
     13 (case handicap
@@ -80,7 +80,7 @@
                  :already-started)
         "handicap" (if (= started 0)
                      (if (is-handicap? size value)
-                       (do (-> game 
+                       (do (-> game
                                (storage/set-handicap! (read-string value))
                                put-handicap!)
                            :ok)
