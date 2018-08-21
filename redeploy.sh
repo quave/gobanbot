@@ -6,8 +6,8 @@ docker build -t vladsynkov/gobanbot .
 docker rm -f gobanbot
 docker run -d \
   -p 8443:8443 \
-  -v "$(pwd)"/log:/usr/src/app/log \
-  -v "$(pwd)"/resources:/usr/src/app/resources \
+  -v /home/ec2-user/src/gobanbot/log:/usr/src/app/log \
+  -v /home/ec2-user/src/gobanbot/resources:/usr/src/app/resources \
   --name gobanbot \
   vladsynkov/gobanbot
 docker ps -a
