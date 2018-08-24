@@ -7,8 +7,8 @@
   (let [filename (str (System/getProperty "java.io.tmpdir") "/gobanbot/" cid ".sgf")
         _ (->> game game->sgf (spit filename))
         res (sh "gnugo"
-                "--score" method 
-                "--boardsize" (str size) 
+                "--score" method
+                "--boardsize" (str size)
                 "--handicap" (str handicap)
                 "--komi" "6.5"
                 "-l" filename)]
