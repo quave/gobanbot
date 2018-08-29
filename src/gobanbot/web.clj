@@ -42,7 +42,7 @@
     {user-id :id} :from
     cmd :text
     :as message}]
-  (println "msg handler" message)
+  (log/debug "msg handler" message)
   (let [{cmd-text :cmd value :value} (parse-cmd cmd)]
     (log/debug "Command parsed" cmd-text value)
     (->> (dispatcher/dispatch! chat-id user-id cmd-text value)
@@ -51,19 +51,24 @@
 
 (defn handle-estimate!
   [{{chat-id :id} :chat :as message}]
-  (println "score handler" message)
+  (log/debug "score handler" message)
   (->> (dispatcher/dispatch! chat-id 0 "estimate" "")
        ; TODO estimate
        (send-text token chat-id))
   "ok")
 
 (defhandler bot-handler
-  (command "start" {user :user} (do (println "User" user "joined") "ok"))
+  (command "start" {user :user} (do (log/debug "User" user "joined") "ok"))
   (command "go" message (handle-cmd! message))
   (command "size" message (handle-cmd! message))
   (command "handicap" message (handle-cmd! message))
   (command "estimate" message (handle-estimate! message))
-  (message message (do (println "Intercepted message:" message) "ok")))
+  (message message (do (log/debug "Intercepted message:" message) "ok")))
+
+(defn custom-handler [f type]
+  (fn [^Exception e data request]
+    (log/error e)
+    (f {:message (.getMessage e), :type type})))
 
 (def app
   (api
@@ -73,7 +78,9 @@
                      (ex/with-logging ex/request-parsing-handler :info)
                    ::ex/response-validation
                      (ex/with-logging ex/response-validation-handler :error)
-                   ::ex/default (ex/with-logging internal-server-error :error)}}}
+                   ::ex/default (custom-handler
+                                  internal-server-error
+                                  :error)}}}
     (context "/api" []
       :tags ["api"]
       (GET "/test" []
@@ -84,8 +91,7 @@
         :return scm/Str
         :body [up scm/Any]
         :summary "gets updates"
-        (ok (do (println "Incoming update")
-                (pprint up)
+        (ok (do (log/debug "Incoming update" up)
                 (bot-handler up)))))
     (ANY "/*" []
       :responses {404 String}
@@ -93,8 +99,7 @@
 
 (defn content-logger [handler]
   (fn [content]
-    (pprint "Incoming request")
-    (pprint content)
+    (log/debug "Incoming request" content)
     (handler content)))
 
 (defn -main []

@@ -35,7 +35,7 @@
   (doall (map #(storage/insert-move! game color %) mvs)))
 
 (defn put-handicap! [{:keys [handicap size] :as game}]
-  (println "put-handicap! size" (type size)  size "handicap" (type handicap) handicap)
+  (log/debug "put-handicap! size" (type size)  size "handicap" (type handicap) handicap)
   (storage/clear-moves! game)
   (case size
     9 (case handicap
