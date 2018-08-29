@@ -1,0 +1,26 @@
+{
+  "update_id": 458848504,
+  "message":
+    {
+      "message_id": 1329,
+      "from":
+        {
+          "id": 3837232,
+          "is_bot": false,
+          "first_name": "Pavel",
+          "last_name": "Gertman",
+          "username": "zarazum",
+          "language_code": "en-RU"
+        },
+      "chat":
+        {
+          "id": -143713542,
+          "title": "Gobanbot test",
+          "type": "group",
+          "all_members_are_administrators": true
+        },
+      "date": 1534859000,
+      "text": "/go cd",
+      "entities": [{"offset": 0, "length": 5, "type": "bot_command"}]
+    }
+}

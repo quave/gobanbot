@@ -1,5 +1,6 @@
 (ns gobanbot.storage
   (:require [clojure.java.jdbc :refer :all]
+            [clojure.tools.logging :as log]
             [clojure.string :as s]))
 
 (def db
@@ -24,17 +25,17 @@
   (get-game-where (str "gid=" gid)))
 
 (defn end-game! [{gid :gid :as game}]
-  (println "end-game!" gid)
+  (log/debug "end-game!" gid game)
   (update! db :games {:ended 1} ["gid=?" gid])
   (assoc game :ended 1))
 
 (defn start-game! [{gid :gid :as game}]
-  (println "start-game!" gid)
+  (log/debug "start-game!" gid)
   (update! db :games {:started 1} ["gid=?" gid])
   (assoc game :started 1))
 
 (defn create-game! [cid]
-  (println "create-game!" cid)
+  (log/debug "create-game!" cid)
   (->> {:cid cid :size 19}
        (insert! db :games)
        first
@@ -42,26 +43,26 @@
        get-game))
 
 (defn set-size! [game size]
-  (println "set-size! gid" (:gid game) size)
+  (log/debug "set-size! gid" (:gid game) size)
   (update! db :games {:size size} ["gid=?" (:gid game)])
   (assoc game :size size))
 
 (defn set-handicap! [{gid :gid :as game} value]
-  (println "set-handicap! gid" gid value)
+  (log/debug "set-handicap! gid" gid value)
   (update! db :games {:handicap value} ["gid=?" gid])
   (assoc game :handicap value))
 
 (defn clear-moves! [{gid :gid}]
-  (println "clear-moves! gid" gid)
+  (log/debug "clear-moves! gid" gid)
   (delete! db :moves ["gid=?" gid])
   (get-game gid))
 
 (defn insert-move! [game color mv]
-  (println "add-move gid" (:gid game) "color" color "mv" mv)
+  (log/debug "add-move gid" (:gid game) "color" color "mv" mv)
   (insert! db :moves {:gid (:gid game) :color color :mv mv}))
 
 (defn mark-eaten! [move]
-  (println "mark-eaten" move)
+  (log/debug "mark-eaten" move)
   (update! db :moves {:eaten 1} ["mid=?" (:mid move)]))
 
 (defn set-player! [gid bwid uid]

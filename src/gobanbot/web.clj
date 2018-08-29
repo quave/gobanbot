@@ -22,7 +22,7 @@
 
 (defn send-answer! [chat-id status]
   (log/debug "send-answer!" chat-id status)
-  (if (= status :ok)
+  (comment if (= status :ok)
     (send-photo token
                 chat-id
                 (->> chat-id

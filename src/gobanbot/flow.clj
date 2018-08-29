@@ -16,7 +16,7 @@
                (str
                  "^[a-"
                  max-letter
-                 "]{2}$|^pass$|^resigni$"))
+                 "]{2}$|^pass$|^resign$"))
              value))))
 
 (defn next-bwid [{:keys [bid wid handicap]} uid]
@@ -121,7 +121,7 @@
   (let [gid (:gid game)
         updated (storage/get-game gid)]
     (if (should-end? updated)
-      (storage/end-game! gid)
+      (storage/end-game! game)
       (doall (map storage/mark-eaten! (find-to-eat updated color mv))))))
 
 (defn move! [game uid mv]

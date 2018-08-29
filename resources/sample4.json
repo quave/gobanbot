@@ -1,0 +1,26 @@
+{
+  "update_id": 458848505,
+  "message":
+    {
+      "message_id": 1330,
+      "from":
+        {
+          "id": 3837856,
+          "is_bot": false,
+          "first_name": "Vladislav",
+          "last_name": "Synkov",
+          "username": "vladsynkov",
+          "language_code": "en-RU"
+        },
+      "chat":
+        {
+          "id": -143713542,
+          "title": "Gobanbot test",
+          "type": "group",
+          "all_members_are_administrators": true
+        },
+      "date": 1534860000,
+      "text": "/go resign",
+      "entities": [{"offset": 0, "length": 5, "type": "bot_command"}]
+    }
+}
