@@ -24,6 +24,7 @@
   (log/debug "send-answer!" chat-id status)
   (when (->> "GOBANBOT_ENV"
              System/getenv
+             (#(or % ""))
              s/lower-case
              (not= "dev"))
     (if (= status :ok)
