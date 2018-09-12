@@ -5,6 +5,7 @@
 
 (defn run-score [method {:keys [cid size handicap] :as game}]
   (let [filename (str (System/getProperty "java.io.tmpdir") "/gobanbot/" cid ".sgf")
+        _ (clojure.java.io/make-parents filename)
         _ (->> game game->sgf (spit filename))
         res (sh "gnugo"
                 "--score" method

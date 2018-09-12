@@ -22,15 +22,19 @@
 
 (defn send-answer! [chat-id status]
   (log/debug "send-answer!" chat-id status)
-  (if (= status :ok)
-    (send-photo token
-                chat-id
-                (->> chat-id
-                     storage/last-game
-                     (img/get-goban chat-id)
-                     (str (System/getProperty "java.io.tmpdir") "/gobanbot/")
-                     io/file))
-    (send-text token chat-id (str "Can't move " status))))
+  (when (->> "GOBANBOT_ENV"
+             System/getenv
+             s/lower-case
+             (not= "dev"))
+    (if (= status :ok)
+      (send-photo token
+                  chat-id
+                  (->> chat-id
+                       storage/last-game
+                       (img/get-goban chat-id)
+                       (str (System/getProperty "java.io.tmpdir") "/gobanbot/")
+                       io/file))
+      (send-text token chat-id (str "Can't move " status)))))
 
 (defn parse-cmd [cmd]
   (let [[_ cmd value] (re-find #"(?i)^\/(\w+)\s*(.*)?$" cmd)]
@@ -50,10 +54,9 @@
   "ok")
 
 (defn handle-estimate!
-  [{{chat-id :id} :chat :as message}]
+  [{{chat-id :id} :chat {user-id :id} :from :as message}]
   (log/debug "score handler" message)
-  (->> (dispatcher/dispatch! chat-id 0 "estimate" "")
-       ; TODO estimate
+  (->> (dispatcher/dispatch! chat-id user-id "estimate" "")
        (send-text token chat-id))
   "ok")
 
