@@ -13,24 +13,24 @@
     [x y]))
 
 (defn get-stone-center [[x y]]
-  [(-> x (* cell-size) (+ (/ cell-size 2) margin)) 
+  [(-> x (* cell-size) (+ (/ cell-size 2) margin))
    (-> y (* cell-size) (+ (/ cell-size 2) margin))])
 
 (defn xy-to-circle [xy color]
-  (let [style (if (= color "b") 
-                {:fill :black} 
+  (let [style (if (= color "b")
+                {:fill :black}
                 {:stroke :black :fill :white :stroke-width 3})]
     [:circle style (get-stone-center xy) (* 0.45 cell-size)]))
 
 (defn get-stones [moves]
-  (map (fn [{:keys [mv color]}] 
+  (map (fn [{:keys [mv color]}]
          (xy-to-circle (mv-to-xy mv) color))
     (filter #(-> % :mv count (<= 2)) moves)))
 
 (defn get-last-move [{:keys [mv color] :as move}]
   (if (and move (<= (count mv) 2))
     (let [xy (mv-to-xy mv)
-          style (case color 
+          style (case color
                   "b" {:stroke :white :fill :black :stroke-width 3}
                   "w" {:stroke :black :fill :white :stroke-width 3})]
       [[:circle style (get-stone-center xy) (* 0.3 cell-size)]])))
@@ -43,9 +43,9 @@
 
 (defn get-letters [size]
   (let [stars (get-stars size)]
-    (map (fn [[x y]] [:text 
-                      {:font-family "Open Sans Condensed Light" 
-                       :font-size font-size 
+    (map (fn [[x y]] [:text
+                      {:font-family "Open Sans Condensed Light"
+                       :font-size font-size
                        :fill (if (some (partial = [x y]) stars) "#444444" "#aaaaaa")
                        :x (+ margin (/ cell-size 4) (* x cell-size))
                        :y (+ margin font-size (* y cell-size))}
@@ -54,7 +54,7 @@
 
 (defn get-svg-data [game]
   (vec (concat [:dali/page {:width (+ (* 2 margin) (* (:size game) cell-size))
-                            :height (+ (* 2 margin) (* (:size game) cell-size))}] 
+                            :height (+ (* 2 margin) (* (:size game) cell-size))}]
                (get-letters (:size game))
                (get-stones (:moves game))
                (get-last-move (-> game :moves last)))))
@@ -63,8 +63,8 @@
   (let [f-n (str filename ".png")
         dir (str (System/getProperty "java.io.tmpdir") "/gobanbot/")]
     (.mkdir (java.io.File. dir))
-    (svg/render-png 
-      (get-svg-data game) 
+    (svg/render-png
+      (get-svg-data game)
       (str dir f-n))
     f-n))
 
